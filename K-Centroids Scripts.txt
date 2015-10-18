@@ -1,0 +1,88 @@
+# Step 10.4.1 - Load data from attached package
+data(Athletic, package="BCA")
+
+# Step 10.4.2 and 3 - Create Wards Method Clustering Solution
+WardsAthletic <- hclust(dist(model.matrix(~-1 + 
+  Attnd+Fem+Finan+Grad+Teams+Violat+Win, Athletic))^2 , method= "ward")
+plot(WardsAthletic, main= "Cluster Dendrogram for Solution WardsAthletic", 
+  xlab= "Observation Number in Data Set Athletic", 
+  sub="Method=ward; Distance=squared-euclidian")
+
+# Step 10.4.4 - Summarize hierarchical clustering solution
+summary(as.factor(cutree(WardsAthletic, k = 4))) # Cluster Sizes
+by(model.matrix(~-1 + Attnd + Fem + Finan + Grad + Teams + Violat + Win, 
+  Athletic), as.factor(cutree(WardsAthletic, k = 4)), colMeans) 
+  # Cluster Centroids
+bpCent(prcomp(model.matrix(~-1 + Attnd + Fem + Finan + Grad + Teams + 
+  Violat + Win, Athletic)), cutree(WardsAthletic, k = 4), data.pts = TRUE, 
+  centroids = TRUE, xlabs = as.character(cutree(WardsAthletic, k = 4)))
+
+# Step 10.4.7 - Add hierarchical clustering to data set
+Athletic$Wards4 <- assignCluster(model.matrix(~-1 + Attnd + Fem + Finan + 
+  Grad + Teams + Violat + Win, Athletic), Athletic, cutree(WardsAthletic, k = 
+  4))
+
+# Step 11.4.2 and 3 - k-centroids clustering diagnostics analysis (K-Means)
+bootCVD(model.matrix(~-1 + Attnd + Fem + Finan + Grad + Teams + Violat + 
+  Win, Athletic), k = 2:7, nboot = 100, nrep = 3, method = "kmn", col1 = 1, 
+  col2 = 2, dsname = "Athletic")
+.cluster <- stepFlexclust(model.matrix(~-1 + Attnd + Fem + Finan + Grad + 
+  Teams + Violat + Win, Athletic), k = 4, nrep = 10, FUN = kcca, family = 
+  kccaFamily("kmeans"))
+summary(.cluster)
+print(.cluster@centers) # Cluster Centroids
+
+# Step 11.4.5 - k-centroids cluster analysis (K-Means)
+bpCent(prcomp(model.matrix(~-1 + Attnd + Fem + Finan + Grad + Teams + 
+  Violat + Win, Athletic)), clusters(.cluster), data.pts = TRUE, centroids = 
+  FALSE, xlabs = as.character(clusters(.cluster)))
+Athletic$KMeans4 <- as.factor(clusters(.cluster))
+remove(.cluster)
+
+# Step 11.4.7 and 8 - create two-way table to compare Wards4 with KMeans4
+library(abind, pos=4)
+.Table <- xtabs(~KMeans4+Wards4, data=Athletic)
+.Table
+remove(.Table)
+
+# Step 11.4.9a - k-centroids clustering diagnostics analysis (K-medians)
+bootCVD(model.matrix(~-1 + Attnd + Fem + Finan + Grad + Teams + Violat + 
+  Win, Athletic), k = 2:7, nboot = 100, nrep = 3, method = "kmd", col1 = 1, 
+  col2 = 2, dsname = "Athletic")
+.cluster <- stepFlexclust(model.matrix(~-1 + Attnd + Fem + Finan + Grad + 
+  Teams + Violat + Win, Athletic), k = 4, nrep = 10, FUN = kcca, family = 
+  kccaFamily("kmedians"))
+summary(.cluster)
+print(.cluster@centers) # Cluster Centroids
+
+# Step 11.4.9a - k-centroids cluster analysis (K-medians)
+bpCent(prcomp(model.matrix(~-1 + Attnd + Fem + Finan + Grad + Teams + 
+  Violat + Win, Athletic)), clusters(.cluster), data.pts = TRUE, centroids = 
+  FALSE, xlabs = as.character(clusters(.cluster)))
+Athletic$KMedians4 <- as.factor(clusters(.cluster))
+remove(.cluster)
+
+# Step 11.4.9b - k-centroids clustering diagnostics (Neural Gas)
+bootCVD(model.matrix(~-1 + Attnd + Fem + Finan + Grad + Teams + Violat + Win, 
+  Athletic), k = 2:7, nboot = 100, nrep = 3, method = "neuralgas", col1 = 1, col2 
+  = 2, dsname = "Athletic")
+
+# Step 11.4.9b - k-centroids cluster analysis (Neural Gas)
+.cluster <- stepFlexclust(model.matrix(~-1 + Attnd + Fem + Finan + Grad + Teams 
+  + Violat + Win, Athletic), k = 4, nrep = 10, FUN = cclust, dist = "euclidean", 
+  method = "neuralgas")
+summary(.cluster)
+print(.cluster@centers) # Cluster Centroids
+bpCent(prcomp(model.matrix(~-1 + Attnd + Fem + Finan + Grad + Teams + Violat + 
+  Win, Athletic)), clusters(.cluster), data.pts = TRUE, centroids = FALSE, xlabs 
+  = as.character(clusters(.cluster)))
+Athletic$NeuralGas4 <- as.factor(clusters(.cluster))
+remove(.cluster)
+
+# Two-Way Tables comparing neural gas clusters to k-means and k-medians clusters
+.Table <- xtabs(~KMeans4+NeuralGas4, data=Athletic)
+.Table
+remove(.Table)
+.Table <- xtabs(~KMedians4+NeuralGas4, data=Athletic)
+.Table
+remove(.Table)
